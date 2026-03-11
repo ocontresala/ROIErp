@@ -1,0 +1,635 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>ROI – Migración ERP</title>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg:      #0a0f1e;
+      --card:    #111827;
+      --border:  #1e2d45;
+      --accent:  #00c6ff;
+      --accent2: #0072ff;
+      --green:   #00e096;
+      --red:     #ff4d6d;
+      --yellow:  #ffd166;
+      --text:    #e2e8f0;
+      --muted:   #64748b;
+    }
+
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: Georgia, serif;
+      min-height: 100vh;
+    }
+
+    /* ── HEADER ── */
+    .header {
+      background: linear-gradient(135deg, #0a0f1e 0%, #0d1f3c 50%, #0a0f1e 100%);
+      border-bottom: 1px solid var(--border);
+      padding: 32px 40px 24px;
+      position: relative;
+      overflow: hidden;
+    }
+    .header::after {
+      content: '';
+      position: absolute;
+      top: 0; right: 0;
+      width: 400px; height: 100%;
+      background: radial-gradient(ellipse at top right, rgba(0,198,255,.08), transparent 70%);
+      pointer-events: none;
+    }
+    .header-eyebrow {
+      font-size: 11px;
+      letter-spacing: 4px;
+      color: var(--accent);
+      text-transform: uppercase;
+      font-family: monospace;
+      margin-bottom: 8px;
+    }
+    .header h1 { font-size: 28px; font-weight: 700; letter-spacing: -.5px; }
+    .header p  { color: var(--muted); margin-top: 6px; font-size: 14px; }
+
+    /* ── TABS ── */
+    .tabs {
+      display: flex;
+      border-bottom: 1px solid var(--border);
+      background: var(--card);
+      padding-left: 40px;
+      overflow-x: auto;
+    }
+    .tab-btn {
+      background: none;
+      border: none;
+      border-bottom: 2px solid transparent;
+      cursor: pointer;
+      padding: 14px 20px;
+      font-size: 13px;
+      font-family: Georgia, serif;
+      color: var(--muted);
+      white-space: nowrap;
+      transition: color .2s, border-color .2s;
+    }
+    .tab-btn.active {
+      color: var(--accent);
+      border-bottom-color: var(--accent);
+    }
+    .tab-btn:hover { color: var(--accent); }
+
+    /* ── CONTENT ── */
+    .content {
+      padding: 32px 40px;
+      max-width: 1100px;
+    }
+    .section { display: none; }
+    .section.active { display: block; }
+
+    .section-title {
+      font-size: 18px;
+      color: var(--accent);
+      margin-bottom: 24px;
+      font-weight: 400;
+      letter-spacing: 1px;
+    }
+
+    /* ── CARD ── */
+    .card {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+    }
+
+    /* ── GRID ── */
+    .grid-4 { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; }
+    .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; }
+    .grid-3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; }
+    .grid-2-sm { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+
+    /* ── KPI CARDS ── */
+    .kpi-card {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 20px;
+    }
+    .kpi-label {
+      font-size: 11px;
+      color: var(--muted);
+      letter-spacing: 2px;
+      text-transform: uppercase;
+      margin-bottom: 8px;
+    }
+    .kpi-value { font-size: 28px; font-weight: 700; }
+    .kpi-sub   { font-size: 12px; color: var(--muted); margin-top: 4px; }
+
+    /* ── BULLET LIST ── */
+    .bullet { display: flex; gap: 10px; align-items: flex-start; }
+    .bullet-icon { margin-top: 2px; }
+    .bullet-text  { font-size: 13px; color: var(--text); line-height: 1.5; }
+
+    /* ── INFO BOX ── */
+    .info-box {
+      border-radius: 10px;
+      padding: 20px;
+    }
+    .info-box-label { font-size: 12px; margin-bottom: 10px; letter-spacing: 1px; font-weight: 600; }
+
+    /* ── TABLE ── */
+    .cost-table { border-radius: 10px; overflow: hidden; background: var(--card); border: 1px solid var(--border); }
+    .cost-table .row {
+      display: grid;
+      grid-template-columns: 1fr 1fr 1fr 1fr;
+      gap: 8px;
+      padding: 14px 20px;
+      border-bottom: 1px solid var(--border);
+    }
+    .cost-table .row.header-row { padding: 16px 20px; }
+    .cost-table .row.total-row  { background: rgba(0,198,255,.05); padding: 16px 20px; }
+    .cost-table .row.stripe     { background: rgba(255,255,255,.01); }
+    .col-label  { font-size: 11px; color: var(--muted); letter-spacing: 1px; }
+    .col-value  { font-size: 13px; }
+    .text-right { text-align: right; }
+    .fw700      { font-weight: 700; }
+
+    /* ── CHART CONTAINER ── */
+    .chart-wrap { position: relative; }
+
+    /* ── ROI METRICS ── */
+    .roi-metric {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 14px 18px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .roi-metric-label { font-size: 12px; color: var(--muted); }
+    .roi-metric-value { font-size: 16px; font-weight: 700; }
+
+    /* ── ALTERNATIVES ── */
+    .alt-card {
+      background: var(--card);
+      border-radius: 10px;
+      padding: 20px 24px;
+      position: relative;
+    }
+    .alt-badge {
+      position: absolute;
+      top: 16px; right: 16px;
+      background: var(--green);
+      color: #000;
+      font-size: 10px;
+      font-weight: 700;
+      letter-spacing: 2px;
+      padding: 3px 10px;
+      border-radius: 20px;
+    }
+    .alt-name  { font-size: 15px; font-weight: 700; margin-bottom: 16px; }
+    .alt-grid  { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; }
+    .alt-item-label { font-size: 10px; color: var(--muted); letter-spacing: 2px; margin-bottom: 4px; }
+    .alt-item-value { font-size: 14px; font-weight: 600; color: var(--text); }
+
+    /* ── CRITERIA ── */
+    .criteria-item { display: flex; gap: 10px; align-items: flex-start; }
+    .criteria-icon { font-size: 18px; }
+    .criteria-label  { font-size: 12px; color: var(--muted); }
+    .criteria-winner { font-size: 12px; color: var(--green); font-weight: 600; }
+
+    /* ── BENEFITS ── */
+    .benefit-card {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 20px;
+      display: flex;
+      gap: 16px;
+    }
+    .benefit-icon  { font-size: 28px; line-height: 1; }
+    .benefit-title { font-size: 13px; font-weight: 700; margin-bottom: 6px; }
+    .benefit-desc  { font-size: 12px; color: var(--muted); line-height: 1.6; }
+
+    /* ── STEPS ── */
+    .step { display: flex; gap: 16px; align-items: center; }
+    .step-num {
+      min-width: 36px; height: 36px;
+      border-radius: 50%;
+      background: rgba(0,198,255,.1);
+      border: 1px solid var(--accent);
+      display: flex; align-items: center; justify-content: center;
+      font-size: 12px; color: var(--accent); font-weight: 700;
+    }
+    .step-text  { flex: 1; font-size: 13px; color: var(--text); }
+    .step-time  { font-size: 11px; color: var(--muted); white-space: nowrap; }
+
+    /* ── SPACING HELPERS ── */
+    .mb8  { margin-bottom: 8px; }
+    .mb12 { margin-bottom: 12px; }
+    .mb16 { margin-bottom: 16px; }
+    .mb20 { margin-bottom: 20px; }
+    .mb24 { margin-bottom: 24px; }
+    .mb32 { margin-bottom: 32px; }
+    .mt20 { margin-top: 20px; }
+    .p20  { padding: 20px; }
+    .p24  { padding: 24px; }
+    .gap12{ gap: 12px; }
+    .gap16{ gap: 16px; }
+    .flex-col { display: flex; flex-direction: column; }
+
+    @media(max-width: 768px) {
+      .grid-4 { grid-template-columns: 1fr 1fr; }
+      .grid-2 { grid-template-columns: 1fr; }
+      .grid-3 { grid-template-columns: 1fr 1fr; }
+      .alt-grid { grid-template-columns: 1fr 1fr; }
+      .content { padding: 20px; }
+      .header  { padding: 20px; }
+    }
+  </style>
+</head>
+<body>
+
+<!-- HEADER -->
+<div class="header">
+  <div class="header-eyebrow">Análisis Estratégico · Migración ERP</div>
+  <h1>Retorno sobre la Inversión</h1>
+  <p>JD Edwards 9.1 → Versión Estándar · Sector Construcción · Colombia</p>
+</div>
+
+<!-- TABS -->
+<div class="tabs">
+  <button class="tab-btn active" data-tab="resumen">Resumen Ejecutivo</button>
+  <button class="tab-btn" data-tab="costos">Análisis de Costos</button>
+  <button class="tab-btn" data-tab="roi">ROI &amp; Payback</button>
+  <button class="tab-btn" data-tab="alternativas">Alternativas</button>
+  <button class="tab-btn" data-tab="beneficios">Beneficios</button>
+</div>
+
+<!-- CONTENT -->
+<div class="content">
+
+  <!-- ═══ RESUMEN EJECUTIVO ═══ -->
+  <div id="resumen" class="section active">
+    <div class="section-title">RESUMEN EJECUTIVO</div>
+
+    <div class="grid-4 mb32">
+      <div class="kpi-card" style="border-top: 3px solid var(--red)">
+        <div class="kpi-label">Costo Anual Actual</div>
+        <div class="kpi-value" style="color:var(--red)">$920M</div>
+        <div class="kpi-sub">COP / año</div>
+      </div>
+      <div class="kpi-card" style="border-top: 3px solid var(--green)">
+        <div class="kpi-label">Costo Anual Nuevo</div>
+        <div class="kpi-value" style="color:var(--green)">$680M</div>
+        <div class="kpi-sub">COP / año</div>
+      </div>
+      <div class="kpi-card" style="border-top: 3px solid var(--accent)">
+        <div class="kpi-label">Ahorro Anual</div>
+        <div class="kpi-value" style="color:var(--accent)">$240M</div>
+        <div class="kpi-sub">COP / año</div>
+      </div>
+      <div class="kpi-card" style="border-top: 3px solid var(--yellow)">
+        <div class="kpi-label">Payback</div>
+        <div class="kpi-value" style="color:var(--yellow)">3.3 años</div>
+        <div class="kpi-sub">retorno inversión</div>
+      </div>
+    </div>
+
+    <div class="card p24 mb20">
+      <div style="font-size:14px;color:var(--accent);margin-bottom:12px;font-weight:600;letter-spacing:1px">PROBLEMÁTICA ACTUAL</div>
+      <div class="grid-2-sm gap12">
+        <div class="bullet"><span class="bullet-icon" style="color:var(--red)">▸</span><span class="bullet-text">JD Edwards 9.1 con alto nivel de personalización que compromete la eficiencia operativa</span></div>
+        <div class="bullet"><span class="bullet-icon" style="color:var(--red)">▸</span><span class="bullet-text">Las áreas reportan falta de agilidad en sus procesos críticos</span></div>
+        <div class="bullet"><span class="bullet-icon" style="color:var(--red)">▸</span><span class="bullet-text">Doble infraestructura (producción + pruebas) con costo y esfuerzo de mantenimiento</span></div>
+        <div class="bullet"><span class="bullet-icon" style="color:var(--red)">▸</span><span class="bullet-text">Capacidad de producción sobredimensionada por personalizaciones acumuladas</span></div>
+      </div>
+    </div>
+
+    <div class="card p24">
+      <div style="font-size:14px;color:var(--green);margin-bottom:12px;font-weight:600;letter-spacing:1px">RECOMENDACIÓN</div>
+      <p style="font-size:13px;line-height:1.8;color:var(--text)">
+        Migrar a la <strong style="color:var(--green)">versión estándar de la misma familia ERP</strong> representa la alternativa con menor riesgo, menor tiempo de implementación (~6-12 meses) y el mejor retorno financiero. Con una inversión de <strong>$780M COP</strong> y un ahorro anual de <strong>$240M COP</strong>, el proyecto se recupera en aproximadamente <strong>3.3 años</strong>, generando valor sostenido a partir del cuarto año, con un ahorro acumulado de <strong>$1,620M COP</strong> al cabo de 10 años.
+      </p>
+    </div>
+  </div>
+
+  <!-- ═══ ANÁLISIS DE COSTOS ═══ -->
+  <div id="costos" class="section">
+    <div class="section-title">ANÁLISIS DE COSTOS ANUALES</div>
+
+    <div class="grid-2 mb24">
+      <!-- Tabla comparativa -->
+      <div class="cost-table">
+        <div class="row header-row">
+          <span class="col-label">RUBRO</span>
+          <span class="col-label text-right" style="color:var(--red)">ACTUAL</span>
+          <span class="col-label text-right" style="color:var(--green)">NUEVO</span>
+          <span class="col-label text-right" style="color:var(--accent)">AHORRO</span>
+        </div>
+        <div class="row">
+          <span class="col-value">Infraestructura Cloud</span>
+          <span class="col-value text-right" style="color:var(--red)">$390M</span>
+          <span class="col-value text-right" style="color:var(--green)">$220M</span>
+          <span class="col-value text-right" style="color:var(--accent)">$170M</span>
+        </div>
+        <div class="row stripe">
+          <span class="col-value">Soporte</span>
+          <span class="col-value text-right" style="color:var(--red)">$400M</span>
+          <span class="col-value text-right" style="color:var(--green)">$400M</span>
+          <span class="col-value text-right" style="color:var(--muted)">-</span>
+        </div>
+        <div class="row">
+          <span class="col-value">Consultoría</span>
+          <span class="col-value text-right" style="color:var(--red)">$60M</span>
+          <span class="col-value text-right" style="color:var(--green)">$60M</span>
+          <span class="col-value text-right" style="color:var(--muted)">-</span>
+        </div>
+        <div class="row stripe">
+          <span class="col-value">Amb. Pruebas</span>
+          <span class="col-value text-right" style="color:var(--red)">$70M</span>
+          <span class="col-value text-right" style="color:var(--green)">$0M</span>
+          <span class="col-value text-right" style="color:var(--accent)">$70M</span>
+        </div>
+        <div class="row total-row">
+          <span class="col-value fw700">TOTAL</span>
+          <span class="col-value fw700 text-right" style="color:var(--red)">$920M</span>
+          <span class="col-value fw700 text-right" style="color:var(--green)">$680M</span>
+          <span class="col-value fw700 text-right" style="color:var(--accent)">$240M</span>
+        </div>
+      </div>
+
+      <!-- Gráfica comparativa -->
+      <div class="card p20">
+        <div style="font-size:12px;color:var(--muted);margin-bottom:16px;letter-spacing:1px">COMPARATIVA POR RUBRO (COP Millones)</div>
+        <div class="chart-wrap" style="height:220px">
+          <canvas id="barChart"></canvas>
+        </div>
+      </div>
+    </div>
+
+    <!-- Supuestos -->
+    <div class="info-box" style="background:rgba(0,198,255,.05);border:1px solid rgba(0,198,255,.2)">
+      <div class="info-box-label" style="color:var(--accent)">SUPUESTOS DEL ANÁLISIS</div>
+      <div class="grid-2-sm gap12">
+        <div class="bullet"><span style="color:var(--accent)">◆</span>&nbsp;<span style="font-size:12px;color:var(--text)">Reducción ~50% de usuarios activos gracias a rediseño de procesos</span></div>
+        <div class="bullet"><span style="color:var(--accent)">◆</span>&nbsp;<span style="font-size:12px;color:var(--text)">Eliminación del ambiente de pruebas independiente (unificado en arquitectura productiva)</span></div>
+        <div class="bullet"><span style="color:var(--accent)">◆</span>&nbsp;<span style="font-size:12px;color:var(--text)">Sin desarrollos a la medida sobre módulos base del nuevo ERP</span></div>
+        <div class="bullet"><span style="color:var(--accent)">◆</span>&nbsp;<span style="font-size:12px;color:var(--text)">Liberación parcial de recurso IT dedicado a doble infraestructura</span></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══ ROI & PAYBACK ═══ -->
+  <div id="roi" class="section">
+    <div class="section-title">ROI &amp; ANÁLISIS DE PAYBACK</div>
+
+    <div class="grid-2 mb24" style="grid-template-columns:2fr 1fr">
+      <!-- Gráfica acumulada -->
+      <div class="card p24">
+        <div style="font-size:12px;color:var(--muted);margin-bottom:16px;letter-spacing:1px">COSTO ACUMULADO 10 AÑOS (COP Millones)</div>
+        <div class="chart-wrap" style="height:280px">
+          <canvas id="lineChart"></canvas>
+        </div>
+      </div>
+
+      <!-- Métricas ROI -->
+      <div class="flex-col gap16">
+        <div class="roi-metric">
+          <span class="roi-metric-label">Inversión Inicial</span>
+          <span class="roi-metric-value" style="color:var(--yellow)">$780M</span>
+        </div>
+        <div class="roi-metric">
+          <span class="roi-metric-label">Ahorro Año 1</span>
+          <span class="roi-metric-value" style="color:var(--green)">$240M</span>
+        </div>
+        <div class="roi-metric">
+          <span class="roi-metric-label">Payback</span>
+          <span class="roi-metric-value" style="color:var(--accent)">3.3 años</span>
+        </div>
+        <div class="roi-metric">
+          <span class="roi-metric-label">Ahorro Acumulado Año 5</span>
+          <span class="roi-metric-value" style="color:var(--green)">$420M</span>
+        </div>
+        <div class="roi-metric">
+          <span class="roi-metric-label">Ahorro Acumulado Año 10</span>
+          <span class="roi-metric-value" style="color:var(--green)">$1,620M</span>
+        </div>
+        <div class="roi-metric">
+          <span class="roi-metric-label">ROI a 10 años</span>
+          <span class="roi-metric-value" style="color:var(--accent)">208%</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="info-box" style="background:rgba(0,224,150,.05);border:1px solid rgba(0,224,150,.2)">
+      <div class="info-box-label" style="color:var(--green)">💡 OPORTUNIDAD ADICIONAL NO CUANTIFICADA</div>
+      <p style="font-size:13px;color:var(--text);line-height:1.7">
+        La nueva versión incluye <strong>capacidades de automatización de procesos operativos</strong> actualmente no disponibles. Su explotación puede generar eficiencias adicionales en horas-hombre y velocidad de operación que <strong>no están incluidas en este ROI base</strong>, mejorando aún más el retorno real del proyecto.
+      </p>
+    </div>
+  </div>
+
+  <!-- ═══ ALTERNATIVAS ═══ -->
+  <div id="alternativas" class="section">
+    <div class="section-title">COMPARATIVA DE ALTERNATIVAS</div>
+
+    <div class="flex-col gap16 mb20">
+      <!-- Alt 1 -->
+      <div class="alt-card" style="border:1px solid var(--border);border-left:4px solid var(--red)">
+        <div class="alt-name" style="color:var(--red)">ERP Nuevo (Diferente Fabricante)</div>
+        <div class="alt-grid">
+          <div><div class="alt-item-label">INVERSIÓN</div><div class="alt-item-value">800M – 1,500M</div></div>
+          <div><div class="alt-item-label">COSTO ANUAL</div><div class="alt-item-value">600M – 900M</div></div>
+          <div><div class="alt-item-label">TIEMPO IMPL.</div><div class="alt-item-value">18 – 36 meses</div></div>
+          <div><div class="alt-item-label">NIVEL DE RIESGO</div><div class="alt-item-value">Alto</div></div>
+        </div>
+      </div>
+
+      <!-- Alt 2 -->
+      <div class="alt-card" style="border:1px solid var(--border);border-left:4px solid var(--yellow)">
+        <div class="alt-name" style="color:var(--yellow)">ERP Nuevo (Mismo Fabricante)</div>
+        <div class="alt-grid">
+          <div><div class="alt-item-label">INVERSIÓN</div><div class="alt-item-value">600M – 1,000M</div></div>
+          <div><div class="alt-item-label">COSTO ANUAL</div><div class="alt-item-value">550M – 800M</div></div>
+          <div><div class="alt-item-label">TIEMPO IMPL.</div><div class="alt-item-value">12 – 24 meses</div></div>
+          <div><div class="alt-item-label">NIVEL DE RIESGO</div><div class="alt-item-value">Medio</div></div>
+        </div>
+      </div>
+
+      <!-- Alt 3 – RECOMENDADO -->
+      <div class="alt-card" style="border:1px solid var(--green);border-left:4px solid var(--green)">
+        <div class="alt-badge">RECOMENDADO</div>
+        <div class="alt-name" style="color:var(--green)">Versión Estándar (Misma Familia)</div>
+        <div class="alt-grid">
+          <div><div class="alt-item-label">INVERSIÓN</div><div class="alt-item-value">~780M</div></div>
+          <div><div class="alt-item-label">COSTO ANUAL</div><div class="alt-item-value">680M</div></div>
+          <div><div class="alt-item-label">TIEMPO IMPL.</div><div class="alt-item-value">6 – 12 meses</div></div>
+          <div><div class="alt-item-label">NIVEL DE RIESGO</div><div class="alt-item-value">Bajo</div></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Criterios de decisión -->
+    <div class="card p20">
+      <div style="font-size:12px;color:var(--accent);margin-bottom:12px;letter-spacing:1px">CRITERIOS DE DECISIÓN</div>
+      <div class="grid-3 gap12">
+        <div class="criteria-item"><span class="criteria-icon">🛡️</span><div><div class="criteria-label">Menor Riesgo Operativo</div><div class="criteria-winner">Versión Estándar</div></div></div>
+        <div class="criteria-item"><span class="criteria-icon">⏱️</span><div><div class="criteria-label">Menor Tiempo de Implementación</div><div class="criteria-winner">Versión Estándar</div></div></div>
+        <div class="criteria-item"><span class="criteria-icon">📈</span><div><div class="criteria-label">Mejor ROI</div><div class="criteria-winner">Versión Estándar</div></div></div>
+        <div class="criteria-item"><span class="criteria-icon">🚀</span><div><div class="criteria-label">Mayor Funcionalidad Nueva</div><div class="criteria-winner">ERP Diferente Fabricante</div></div></div>
+        <div class="criteria-item"><span class="criteria-icon">🎓</span><div><div class="criteria-label">Menor Curva de Aprendizaje</div><div class="criteria-winner">Versión Estándar</div></div></div>
+        <div class="criteria-item"><span class="criteria-icon">🗃️</span><div><div class="criteria-label">Continuidad de Datos</div><div class="criteria-winner">Misma Familia</div></div></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══ BENEFICIOS ═══ -->
+  <div id="beneficios" class="section">
+    <div class="section-title">BENEFICIOS ESTRATÉGICOS</div>
+
+    <div class="grid-2 mb24">
+      <div class="benefit-card"><div class="benefit-icon">⚡</div><div><div class="benefit-title">Eficiencia Operativa</div><div class="benefit-desc">Automatización de procesos operativos actualmente manuales. Reducción de fricciones reportadas por áreas.</div></div></div>
+      <div class="benefit-card"><div class="benefit-icon">👥</div><div><div class="benefit-title">Reducción de Usuarios ~50%</div><div class="benefit-desc">Optimización de procesos reduce la carga operativa y los requerimientos de capacidad en producción.</div></div></div>
+      <div class="benefit-card"><div class="benefit-icon">🏗️</div><div><div class="benefit-title">Simplificación de Arquitectura</div><div class="benefit-desc">Eliminación del ambiente de pruebas independiente. Unificación en arquitectura de producción.</div></div></div>
+      <div class="benefit-card"><div class="benefit-icon">🛡️</div><div><div class="benefit-title">Riesgo Tecnológico Reducido</div><div class="benefit-desc">Versión estándar sin personalizaciones críticas. Menor dependencia de desarrollos a la medida.</div></div></div>
+      <div class="benefit-card"><div class="benefit-icon">🔧</div><div><div class="benefit-title">Liberación de Recursos IT</div><div class="benefit-desc">Se elimina la revisión doble de infraestructura (producción + pruebas). Recurso dedicado a valor.</div></div></div>
+      <div class="benefit-card"><div class="benefit-icon">📋</div><div><div class="benefit-title">Cumplimiento Normativo</div><div class="benefit-desc">Versión actualizada con mejores capacidades de cumplimiento tributario colombiano (DIAN).</div></div></div>
+    </div>
+
+    <!-- Próximos pasos -->
+    <div class="info-box" style="background:rgba(0,198,255,.05);border:1px solid rgba(0,198,255,.15)">
+      <div class="info-box-label" style="color:var(--accent);letter-spacing:1px;margin-bottom:16px">PRÓXIMOS PASOS RECOMENDADOS</div>
+      <div class="flex-col gap12">
+        <div class="step">
+          <div class="step-num">01</div>
+          <div class="step-text">Validar cotización formal con el fabricante para versión estándar</div>
+          <div class="step-time">2-3 semanas</div>
+        </div>
+        <div class="step">
+          <div class="step-num">02</div>
+          <div class="step-text">Mapeo de personalizaciones actuales vs. funcionalidad estándar disponible</div>
+          <div class="step-time">3-4 semanas</div>
+        </div>
+        <div class="step">
+          <div class="step-num">03</div>
+          <div class="step-text">Definir plan de gestión del cambio y comunicación a áreas</div>
+          <div class="step-time">Paralelo</div>
+        </div>
+        <div class="step">
+          <div class="step-num">04</div>
+          <div class="step-text">Aprobación de presupuesto e inicio de proceso de contratación</div>
+          <div class="step-time">Mes 2</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</div><!-- /content -->
+
+<script>
+  /* ── TABS ── */
+  const tabs = document.querySelectorAll('.tab-btn');
+  const sections = document.querySelectorAll('.section');
+
+  tabs.forEach(btn => {
+    btn.addEventListener('click', () => {
+      tabs.forEach(b => b.classList.remove('active'));
+      sections.forEach(s => s.classList.remove('active'));
+      btn.classList.add('active');
+      document.getElementById(btn.dataset.tab).classList.add('active');
+    });
+  });
+
+  /* ── CHART DEFAULTS ── */
+  Chart.defaults.color = '#64748b';
+  Chart.defaults.borderColor = '#1e2d45';
+
+  /* ── BAR CHART ── */
+  new Chart(document.getElementById('barChart'), {
+    type: 'bar',
+    data: {
+      labels: ['Infraestructura', 'Soporte', 'Consultoría', 'Amb. Pruebas'],
+      datasets: [
+        { label: 'Actual', data: [390, 400, 60, 70], backgroundColor: '#ff4d6d', borderRadius: 4 },
+        { label: 'Nuevo',  data: [220, 400, 60,  0], backgroundColor: '#00e096', borderRadius: 4 },
+      ]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: {
+        legend: { labels: { color: '#64748b', font: { size: 12 } } },
+        tooltip: {
+          backgroundColor: '#1e293b',
+          titleColor: '#00c6ff',
+          bodyColor: '#e2e8f0',
+          callbacks: { label: ctx => ` ${ctx.dataset.label}: $${ctx.parsed.y}M` }
+        }
+      },
+      scales: {
+        x: { ticks: { font: { size: 11 } }, grid: { color: '#1e2d45' } },
+        y: { ticks: { font: { size: 11 }, callback: v => `$${v}M` }, grid: { color: '#1e2d45' } }
+      }
+    }
+  });
+
+  /* ── LINE CHART ── */
+  // costoActual = 920, costoNuevo = 680, inversion = 780, horizonte = 10 años
+  const roiLabels = ['Hoy','Año 1','Año 2','Año 3','Año 4','Año 5','Año 6','Año 7','Año 8','Año 9','Año 10'];
+  const actual = roiLabels.map((_,i) => 920 * i);
+  const nuevo  = roiLabels.map((_,i) => i === 0 ? 0 : 680 * i + 780);
+
+  new Chart(document.getElementById('lineChart'), {
+    type: 'line',
+    data: {
+      labels: roiLabels,
+      datasets: [
+        {
+          label: 'Escenario Actual',
+          data: actual,
+          borderColor: '#ff4d6d',
+          backgroundColor: 'rgba(255,77,109,.08)',
+          borderWidth: 2.5,
+          pointRadius: 4,
+          pointBackgroundColor: '#ff4d6d',
+          tension: 0.3,
+          fill: false,
+        },
+        {
+          label: 'Nueva Versión Estándar',
+          data: nuevo,
+          borderColor: '#00e096',
+          backgroundColor: 'rgba(0,224,150,.08)',
+          borderWidth: 2.5,
+          pointRadius: 4,
+          pointBackgroundColor: '#00e096',
+          tension: 0.3,
+          fill: false,
+        }
+      ]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: {
+        legend: { labels: { color: '#64748b', font: { size: 12 } } },
+        tooltip: {
+          backgroundColor: '#1e293b',
+          titleColor: '#00c6ff',
+          bodyColor: '#e2e8f0',
+          callbacks: { label: ctx => ` ${ctx.dataset.label}: $${ctx.parsed.y}M` }
+        }
+      },
+      scales: {
+        x: { ticks: { font: { size: 12 } }, grid: { color: '#1e2d45' } },
+        y: { ticks: { font: { size: 12 }, callback: v => `$${v}M` }, grid: { color: '#1e2d45' } }
+      }
+    }
+  });
+</script>
+</body>
+</html>
