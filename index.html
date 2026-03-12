@@ -294,7 +294,7 @@
       </div>
       <div class="kpi-card" style="border-top: 3px solid var(--yellow)">
         <div class="kpi-label">Payback</div>
-        <div class="kpi-value" style="color:var(--yellow)">3.3 años</div>
+        <div class="kpi-value" style="color:var(--yellow)">3.5 años</div>
         <div class="kpi-sub">retorno inversión</div>
       </div>
     </div>
@@ -312,7 +312,7 @@
     <div class="card p24">
       <div style="font-size:14px;color:var(--green);margin-bottom:12px;font-weight:600;letter-spacing:1px">RECOMENDACIÓN</div>
       <p style="font-size:13px;line-height:1.8;color:var(--text)">
-        Migrar a la <strong style="color:var(--green)">versión estándar de la misma familia ERP</strong> representa la alternativa con menor riesgo, menor tiempo de implementación (~6-12 meses) y el mejor retorno financiero. Con una inversión de <strong>$780M COP</strong> y un ahorro anual de <strong>$240M COP</strong>, el proyecto se recupera en aproximadamente <strong>3.3 años</strong>, generando valor sostenido a partir del cuarto año, con un ahorro acumulado de <strong>$1,620M COP</strong> al cabo de 10 años.
+        Migrar a la <strong style="color:var(--green)">versión estándar de la misma familia ERP</strong> representa la alternativa con menor riesgo, menor tiempo de implementación (~6-12 meses) y el mejor retorno financiero. Con una inversión de <strong>$830M COP</strong> y un ahorro anual de <strong>$240M COP</strong>, el proyecto se recupera en aproximadamente <strong>3.5 años</strong>, generando valor sostenido a partir del cuarto año, con un ahorro acumulado de <strong>$1,570M COP</strong> al cabo de 10 años.
       </p>
     </div>
   </div>
@@ -400,7 +400,7 @@
       <div class="flex-col gap16">
         <div class="roi-metric">
           <span class="roi-metric-label">Inversión Inicial</span>
-          <span class="roi-metric-value" style="color:var(--yellow)">$780M</span>
+          <span class="roi-metric-value" style="color:var(--yellow)">$830M</span>
         </div>
         <div class="roi-metric">
           <span class="roi-metric-label">Ahorro Año 1</span>
@@ -408,19 +408,19 @@
         </div>
         <div class="roi-metric">
           <span class="roi-metric-label">Payback</span>
-          <span class="roi-metric-value" style="color:var(--accent)">3.3 años</span>
+          <span class="roi-metric-value" style="color:var(--accent)">3.5 años</span>
         </div>
         <div class="roi-metric">
           <span class="roi-metric-label">Ahorro Acumulado Año 5</span>
-          <span class="roi-metric-value" style="color:var(--green)">$420M</span>
+          <span class="roi-metric-value" style="color:var(--green)">$370M</span>
         </div>
         <div class="roi-metric">
           <span class="roi-metric-label">Ahorro Acumulado Año 10</span>
-          <span class="roi-metric-value" style="color:var(--green)">$1,620M</span>
+          <span class="roi-metric-value" style="color:var(--green)">$1,570M</span>
         </div>
         <div class="roi-metric">
           <span class="roi-metric-label">ROI a 10 años</span>
-          <span class="roi-metric-value" style="color:var(--accent)">208%</span>
+          <span class="roi-metric-value" style="color:var(--accent)">189%</span>
         </div>
       </div>
     </div>
@@ -465,7 +465,7 @@
         <div class="alt-badge">RECOMENDADO</div>
         <div class="alt-name" style="color:var(--green)">Versión Estándar (Misma Familia)</div>
         <div class="alt-grid">
-          <div><div class="alt-item-label">INVERSIÓN</div><div class="alt-item-value">~780M</div></div>
+          <div><div class="alt-item-label">INVERSIÓN</div><div class="alt-item-value">~830M</div></div>
           <div><div class="alt-item-label">COSTO ANUAL</div><div class="alt-item-value">680M</div></div>
           <div><div class="alt-item-label">TIEMPO IMPL.</div><div class="alt-item-value">6 – 12 meses</div></div>
           <div><div class="alt-item-label">NIVEL DE RIESGO</div><div class="alt-item-value">Bajo</div></div>
@@ -578,10 +578,10 @@
   });
 
   /* ── LINE CHART ── */
-  // costoActual = 920, costoNuevo = 680, inversion = 780, horizonte = 10 años
+  // costoActual = 920, costoNuevo = 680, inversion = 830, horizonte = 10 años
   const roiLabels = ['Hoy','Año 1','Año 2','Año 3','Año 4','Año 5','Año 6','Año 7','Año 8','Año 9','Año 10'];
   const actual = roiLabels.map((_,i) => 920 * i);
-  const nuevo  = roiLabels.map((_,i) => i === 0 ? 0 : 680 * i + 780);
+  const nuevo  = roiLabels.map((_,i) => i === 0 ? 0 : 680 * i + 830);
 
   new Chart(document.getElementById('lineChart'), {
     type: 'line',
